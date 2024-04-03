@@ -4,8 +4,10 @@ import org.example.libraryDataBase.Repositories.UserService;
 import org.example.libraryDataBase.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/user")
@@ -23,6 +25,11 @@ public class UserController {
     @PostMapping("/add")
     @ResponseStatus(code = HttpStatus.CREATED)
     public @ResponseBody User addUser(@RequestBody User user){
+        // Sprawdź, czy istnieje już użytkownik o tym samym loginie
+        if (userService.findByUserName(user.getUserName()) != null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "username already taken");
+        }
+        // Zapisz nowego użytkownika
         return userService.save(user);
     }
 
@@ -37,5 +44,9 @@ public class UserController {
         userService.deleteById(userId);
     }
 
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<String> handleException(Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+    }
 }
 
